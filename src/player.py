@@ -54,7 +54,7 @@ class Player:
     def recall(self):
         self.playing_flag = True
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'])
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode)
         self.popen_recall(self.recall, item['mp3_url'])
 
     def play(self, datatype, songs, idx):
@@ -106,13 +106,13 @@ class Player:
         self.pause_flag = True
         os.kill(self.popen_handler.pid, signal.SIGSTOP)
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], pause=True)
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, pause=True)
 
     def resume(self):
         self.pause_flag = False
         os.kill(self.popen_handler.pid, signal.SIGCONT)
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'])
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode)
 
     def next(self):
         self.stop()
@@ -133,4 +133,11 @@ class Player:
             pass
         elif self.playmode == 'random':
             self.idx = random.randint(0, len(self.songs)-1)
+
+    def change_mode(self, playmode):
+        if playmode in ['list', 'single', 'random']:
+            self.playmode = playmode
+            if self.songs:
+                item = self.songs[ self.idx ]
+                self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, self.pause_flag)
 

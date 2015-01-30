@@ -163,15 +163,15 @@ class Menu:
 
             # 列表循环
             elif key == ord(','):
-                self.player.playmode = 'list'
+                self.player.change_mode('list')
 
             # 单曲循环
             elif key == ord('.'):
-                self.player.playmode = 'single'
+                self.player.change_mode('single')
 
             # 随机播放
             elif key == ord('/'):
-                self.player.playmode = 'random'
+                self.player.change_mode('random')
 
             # 播放、暂停
             elif key == ord(' '):

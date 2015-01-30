@@ -23,16 +23,22 @@ class Ui:
         curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
-    def build_playinfo(self, song_name, artist, album_name, pause=False):
+    def build_playinfo(self, song_name, artist, album_name, playmode, pause=False):
         # refresh top 2 line
         self.screen.move(1,1)
         self.screen.clrtoeol()
     	self.screen.move(2,1)
     	self.screen.clrtoeol()
     	if pause:
-    		self.screen.addstr(1, 6, '_ _ z Z Z', curses.color_pair(3))
+    		self.screen.addstr(1, 6, '暂停中-', curses.color_pair(3))
     	else:
-        	self.screen.addstr(1, 6, '♫  ♪ ♫  ♪', curses.color_pair(3))
+        	self.screen.addstr(1, 6, '播放中-', curses.color_pair(3))
+        if playmode == 'list':
+            self.screen.addstr(1, 13, '列表', curses.color_pair(3))
+        elif playmode == 'single':
+            self.screen.addstr(1, 13, '单曲', curses.color_pair(3))
+        elif playmode == 'random':
+            self.screen.addstr(1, 13, '随机', curses.color_pair(3))
         self.screen.addstr(1, 19, song_name + '   -   ' + artist + '  < ' + album_name + ' >', curses.color_pair(4))
     	self.screen.refresh()
 
