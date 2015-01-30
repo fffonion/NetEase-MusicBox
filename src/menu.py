@@ -94,7 +94,7 @@ class Menu:
             stack = self.stack
             djstack = self.djstack
             key = self.screen.getch()
-            self.ui.screen.refresh()
+            self.ui.build_menu(self.datatype, self.title, self.datalist, self.offset, self.index, self.step)
 
             # 退出
             if key == ord('q'):
