@@ -6,6 +6,7 @@
 '''
 
 import curses
+import hashlib
 from api import NetEase
 
 
@@ -173,6 +174,7 @@ class Ui:
     def build_login(self):
         info = self.get_param('请输入登录信息， e.g: john@163.com 123456')
         account = info.split(' ')
+        account[1] = hashlib.md5( account[1] ).hexdigest()
         if len(account) != 2:
             return self.build_login()
         login_info = self.netease.login(account[0], account[1])

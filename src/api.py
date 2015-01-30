@@ -8,7 +8,6 @@
 import re
 import json
 import requests
-import hashlib
 
 
 # list去重
@@ -53,12 +52,12 @@ class NetEase:
         connection = json.loads(connection.text)
         return connection
 
-    # 登录
+    # 登录 password = hashlib.md5( raw_password ).hexdigest()
     def login(self, username, password):
         action = 'http://music.163.com/api/login/'
         data = {
             'username': username,
-            'password': hashlib.md5( password ).hexdigest(),
+            'password': password,
             'rememberLogin': 'true'
         }
         try:
