@@ -16,7 +16,7 @@ from api import NetEase
 from player import Player
 from ui import Ui
 
-home = os.path.expanduser("~") + '/.netease-musicbox'
+home = os.path.expanduser("~") + '/.musicbox'
 if os.path.isdir(home) is False:
     os.mkdir(home)
 
@@ -72,7 +72,7 @@ class Menu:
         self.userid = None
         self.username = None
         try:
-            sfile = file(home + "/flavor.json",'r')
+            sfile = file(home + "/config.json",'r')
             data = json.loads(sfile.read())
             self.collection = data['collection']
             self.account = data['account']
@@ -246,7 +246,7 @@ class Menu:
 
 
         self.player.stop()
-        sfile = file(home + "/flavor.json", 'w')
+        sfile = file(home + "/config.json", 'w')
         data = {
             'account': self.account,
             'collection': self.collection
