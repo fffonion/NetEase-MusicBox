@@ -36,7 +36,7 @@ class NetEase:
             'appver': '1.5.2'
         }
 
-    def httpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):    
+    def httpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):
         if(method == 'GET'):
             url = action if (query == None) else (action + '?' + query)
             connection = requests.get(url, headers=self.header, timeout=default_timeout)
@@ -214,7 +214,7 @@ class NetEase:
                     'artist': [],
                     'song_name': data[i]['name'],
                     'album_name': data[i]['album']['name'],
-                    'mp3_url': data[i]['mp3Url']   
+                    'mp3_url': data[i]['mp3Url']
                 }
                 if 'artist' in data[i]:
                     song_info['artist'] = data[i]['artist']
@@ -255,7 +255,7 @@ class NetEase:
                     'playlists_name': data[i]['name'],
                     'creator_name': data[i]['creator']['nickname']
                 }
-                temp.append(playlists_info)        
+                temp.append(playlists_info)
 
 
         elif dig_type == 'channels':
@@ -266,6 +266,6 @@ class NetEase:
                 'album_name': 'DJ节目',
                 'mp3_url': data['mp3Url']
                 }
-            temp = channel_info    
+            temp = channel_info
 
         return temp
