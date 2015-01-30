@@ -242,6 +242,10 @@ class Menu:
                 if datatype == 'help':
                     webbrowser.open_new_tab('https://github.com/vellow/NetEase-MusicBox')
 
+            elif key in range(ord('0'), ord('9') + 1):
+                if key - 48 <= len(datalist):
+                    self.index = key - 48
+
             self.ui.build_menu(self.datatype, self.title, self.datalist, self.offset, self.index, self.step)
 
 
