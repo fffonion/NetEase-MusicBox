@@ -69,8 +69,10 @@ class App(object):
         sfile.write(json.dumps(data))
         sfile.close()
 
-
-if __name__ == '__main__':
+def start():
     app = App()
     atexit.register(app.stop)
     app.start()
+    
+if __name__ == '__main__':
+   start()

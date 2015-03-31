@@ -7,7 +7,7 @@ NetEase-MusicBox
 
 ### 功能特性
 
-1. 320kps的高品质音乐
+1. **自由选择音乐品质(96k, 160k, 320k)**
 2. 歌曲，艺术家，专辑检索
 3. 网易热门歌曲排行榜
 4. 网易新碟推荐
@@ -16,7 +16,9 @@ NetEase-MusicBox
 7. 私人歌单
 8. 随心打碟
 9. 本地收藏（不提供下载）
-10. 精心设计的快捷键让操作丝般顺滑
+10. **每日推荐歌单**
+11. **私人FM**
+12. 精心设计的快捷键让操作丝般顺滑
 
 ### 键盘快捷键
 
@@ -30,6 +32,7 @@ NetEase-MusicBox
 	<tr> <td>F</td> <td>Search</td> <td>快速搜索</td> </tr>
 	<tr> <td>[</td> <td>Prev song</td> <td>上一曲</td> </tr>
 	<tr> <td>]</td> <td>Next song</td> <td>下一曲</td> </tr>
+	<tr> <td>Del</td> <td>Trash song</td> <td>(FM模式)不感兴趣</td> </tr>
 	<tr> <td>Space</td> <td>Play/Pause</td> <td>播放/暂停</td> </tr>
 	<tr> <td>,</td> <td>Play in list mode</td> <td>列表循环（默认）</td> </tr>
 	<tr> <td>.</td> <td>Play in single mode</td> <td>单曲循环</td> </tr>
@@ -47,9 +50,10 @@ NetEase-MusicBox
 
 ### 安装
 
-	$ pip install netease-musicbox
-
-	$ brew install mpg123
+	$ git clone https://github.com/fffonion/NetEase-MusicBox.git
+	$ cd NetEase-MusicBox
+	# pip install requests
+	$ python ./setup.py install 
 
 ### 使用
 
