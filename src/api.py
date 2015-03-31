@@ -31,10 +31,10 @@ class NetEase:
     APP_ERROR = 10002
     TOKEN_EXPIRED = 10003
 
-    MP3_LEVEL_HIGH = 320
-    MP3_LEVEL_MID = 160
-    MP3_LEVEL_LOW = 96
-    MP3_LEVEL_BASIC = 96
+    MUSIC_LEVEL_HIGH = 320
+    MUSIC_LEVEL_MID = 160
+    MUSIC_LEVEL_LOW = 96
+    MUSIC_LEVEL_BASIC = 96
 
     def __init__(self, cookie = {}):
         self.header = {
@@ -57,7 +57,7 @@ class NetEase:
         self.batch_entered = False
         self.batch_stack = []
         self.token_refreshed = False
-        self.music_level = NetEase.MP3_LEVEL_MID
+        self.music_level = NetEase.MUSIC_LEVEL_MID
 
     def enter_batch(self):
         if self.batch_entered:
@@ -332,11 +332,11 @@ class NetEase:
         # ---------|----------------|-----------------------
         #    get   |       None     |          None         
         #    skip  |      songId    | time=0,  alg=itembased
-        #   trash  |   songId, time |       alg=itembased   
+        # trash/add|   songId, time |       alg=itembased   
         args_dict = {
             'get': {},
             'skip': {'alg':'itembased', 'songId':None, 'time':'0'},
-            'trash': {'alg':'itembased', 'songId':None, 'time':None}
+            'trash/add': {'alg':'itembased', 'songId':None, 'time':None}
         }
         if cmd not in args_dict:
             raise NotImplementedError(" %s is not radio command" % cmd)
@@ -407,34 +407,47 @@ class NetEase:
             s[i] ^= salt[i % salt_len]
         return md5(s).digest().encode('base64').rstrip('\n').replace('/', '_').replace('+', '-')
 
-    def _get_mp3_url(self, data, lvl = None):
-        lvl = lvl or self.music_level
-        if self.music_level == NetEase.MP3_LEVEL_BASIC:
-            return data['mp3Url']
+    def _get_music_info(self, data, lvl = None):
+        meta = {
+            'duration': data['duration'],
+            'bitrate': 96000,
+            'sr': 44100,
+            'ext': 'mp3'
+        }
+        lvl = lvl or self.music_level          
         key_map = {
-            NetEase.MP3_LEVEL_HIGH: 'hMusic',
-            NetEase.MP3_LEVEL_MID: 'mMusic',
-            NetEase.MP3_LEVEL_LOW: 'lMusic',
-            NetEase.MP3_LEVEL_BASIC: 'bMusic'
-            #audition
+            NetEase.MUSIC_LEVEL_HIGH: 'hMusic',
+            NetEase.MUSIC_LEVEL_MID: 'mMusic',
+            NetEase.MUSIC_LEVEL_LOW: 'lMusic',
+            NetEase.MUSIC_LEVEL_BASIC: 'bMusic',
+            None:'audition'
         }
         key = key_map[lvl]
-        if key in data:
+        if key in data and data[key]:#not None
             dfsid = data[key]['dfsId']
+            meta.update({
+                    'bitrate': data[key]['bitrate'],
+                    'sr': data[key]['sr'],
+                    'ext': data[key]['extension']
+                })
             return 'http://m1.music.126.net/%s/%s.mp3' % (
                     self._getBase64DigestString(dfsid), dfsid
-                )
+                ), meta
+        else:
+            return data['mp3Url'], meta
 
     def dig_info(self, data ,dig_type):
         temp = []
-        if dig_type == 'songs':
+        if dig_type == 'songs' or dig_type == 'radio':
             for i in range(0, len(data) ):
+                url, meta = self._get_music_info(data[i])
                 song_info = {
                     'song_id': data[i]['id'],
                     'artist': [],
                     'song_name': data[i]['name'],
                     'album_name': data[i]['album']['name'],
-                    'mp3_url': self._get_mp3_url(data[i])
+                    'mp3_url': url,
+                    'mp3_meta': meta,
                 }
                 if 'artist' in data[i]:
                     song_info['artist'] = data[i]['artist']
@@ -479,12 +492,14 @@ class NetEase:
 
 
         elif dig_type == 'channels':
+            url, meta = self._get_music_info(data[i])
             channel_info = {
                 'song_id': data['id'],
                 'song_name': data['name'],
                 'artist': data['artists'][0]['name'],
                 'album_name': 'DJ节目',
-                'mp3_url': self._get_mp3_url(data)
+                'mp3_url': url,
+                'mp3_meta': meta
                 }
             temp = channel_info
 

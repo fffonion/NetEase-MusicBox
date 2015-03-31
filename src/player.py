@@ -53,16 +53,23 @@ class Player:
 
     def recall(self):
         self.playing_flag = True
+        if self.datatype == 'radio' and len(self.songs) == 1:#no songs left, we only have 1 callback func
+            _get_radio_song_func = self.songs[0]
+            self.songs = _get_radio_song_func() + self.songs # this will generate [song1, song2, ..., _get_radio_song]
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode)
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, meta = item['mp3_meta'])
         self.popen_recall(self.recall, item['mp3_url'])
 
-    def play(self, datatype, songs, idx):
+    def play(self, datatype, datalist, idx):
         # if same playlists && idx --> same song :: pause/resume it
-        self.datatype = datatype
-
-        if datatype == 'songs' or datatype == 'djchannels':
-            if idx == self.idx and songs == self.songs:
+        if datatype == 'radio' and self.datatype != 'radio':#first entering radio; if not first, goto else
+            #datalist = [_get_radio_song, _skip_radio_song] (2 func)
+            self.songs = datalist
+            self.datatype = datatype
+            self.recall()
+        elif datatype == 'songs' or datatype == 'djchannels':
+            self.datatype = datatype
+            if idx == self.idx and datalist == self.songs:
                 if self.pause_flag:
                     self.resume()
                 else:
@@ -70,7 +77,7 @@ class Player:
 
             else:
                 if datatype == 'songs' or datatype == 'djchannels':
-                    self.songs = songs
+                    self.songs = datalist
                     self.idx = idx
 
                 # if it's playing
@@ -89,7 +96,7 @@ class Player:
                     self.pause()
             else:
                 pass
-
+        self.datatype = datatype
     # play another
     def switch(self):
         self.stop()
@@ -106,13 +113,13 @@ class Player:
         self.pause_flag = True
         os.kill(self.popen_handler.pid, signal.SIGSTOP)
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, pause=True)
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, pause=True, meta = item['mp3_meta'])
 
     def resume(self):
         self.pause_flag = False
         os.kill(self.popen_handler.pid, signal.SIGCONT)
         item = self.songs[ self.idx ]
-        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode)
+        self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, meta = item['mp3_meta'])
 
     def next(self):
         self.stop()
@@ -127,17 +134,21 @@ class Player:
         self.recall()
 
     def pick_song(self, next=True):
-        if self.playmode == 'list':
-            self.idx = carousel(0, len(self.songs)-1, (self.idx+1) if next else (self.idx-1))
-        elif self.playmode == 'single':
-            pass
-        elif self.playmode == 'random':
-            self.idx = random.randint(0, len(self.songs)-1)
+        if self.datatype == 'radio':
+            if len(self.songs) > 1:# fail-safe
+                s = self.songs.pop(0) # pop first one
+        else:
+            if self.playmode == 'list':
+                self.idx = carousel(0, len(self.songs)-1, (self.idx+1) if next else (self.idx-1))
+            elif self.playmode == 'single':
+                pass
+            elif self.playmode == 'random':
+                self.idx = random.randint(0, len(self.songs)-1)
 
     def change_mode(self, playmode):
         if playmode in ['list', 'single', 'random']:
             self.playmode = playmode
             if self.songs:
                 item = self.songs[ self.idx ]
-                self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, self.pause_flag)
+                self.ui.build_playinfo(item['song_name'], item['artist'], item['album_name'], self.playmode, self.pause_flag, meta = item['mp3_meta'])
 

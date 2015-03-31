@@ -115,6 +115,9 @@ class Menu:
                     continue
                 self.ui.build_loading()
                 self.dispatch_enter(idx)
+                if self.datatype == 'radio':
+                   # radio mode, auto start
+                   self.player.play(self.datatype, self.datalist, 0)
                 self.index = 0
                 self.offset = 0
 
@@ -136,13 +139,17 @@ class Menu:
 
             # 播放下一曲
             elif key == ord(']'):
+                if self.datatype == 'radio':
+                    songId = self.player.songs[self.player.idx]['song_id']
+                    self.netease.radio(cmd = 'skip', songId = songId)
                 self.player.next()
                 time.sleep(0.1)
 
             # 播放上一曲
             elif key == ord('['):
-                self.player.prev()
-                time.sleep(0.1)
+                if self.datatype != 'radio':
+                    self.player.prev()
+                    time.sleep(0.1)
 
             # 列表循环
             elif key == ord(','):
@@ -229,6 +236,13 @@ class Menu:
                 if key - 48 <= len(datalist):
                     self.index = key - 48
 
+            elif key in [46, 263, 8, 330, 48]:#del, ^?, ^H(BS), Esc[3~, windows
+                if self.datatype == 'radio':
+                    songId = self.player.songs[self.player.idx]['song_id']
+                    #TODO time = play time
+                    self.netease.radio(cmd = 'trash/add', songId = songId, time = 0)
+                    self.player.next()
+                    time.sleep(0.1)
             self.ui.build_menu(self.datatype, self.title, self.datalist, self.offset, self.index, self.step)
 
         curses.endwin()
@@ -289,10 +303,15 @@ class Menu:
         netease = self.netease
         # ['私人FM', '我的歌单', '每日推荐', '排行榜', '艺术家', '新碟上架', '精选歌单', '主播电台', '打碟', '收藏', '搜索', '帮助']
         # 排行榜
-        # 我的歌单
+        # 私人FM
         if idx == 0:
             if not check_login():
                 return
+            self.datatype = 'radio'
+            def _get_radio_song():
+                radio_list = netease.radio(cmd = 'get')
+                return netease.dig_info(radio_list, 'radio')
+            self.datalist =  [_get_radio_song]
         elif idx == 1:
             if not check_login():
                 return
