@@ -11,12 +11,14 @@ from api import NetEase
 
 
 class Ui:
-    def __init__(self):
+    LOGIN_CANCELLED = 1
+
+    def __init__(self, netease_instance):
         self.screen = curses.initscr()
         # charactor break buffer
         curses.cbreak()
         self.screen.keypad(1)
-        self.netease = NetEase()
+        self.netease = netease_instance
         curses.start_color()
         curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -177,26 +179,26 @@ class Ui:
     	x = self.screen.getch()
     	return x
 
-    def build_login(self):
-        info = self.get_param('请输入登录信息， e.g: john@163.com 123456')
+    def build_login(self, extra_msg = ''):
+        info = self.get_param('%s请输入登录信息， e.g: john@163.com 123456' % extra_msg)
         account = info.split(' ')
-        account[1] = hashlib.md5( account[1] ).hexdigest()
         if len(account) != 2:
             return self.build_login()
+        account[1] = hashlib.md5( account[1] ).hexdigest()
         login_info = self.netease.login(account[0], account[1])
         if login_info['code'] != 200:
-            x = self.build_login_error()
+            x = self.build_login_error(login_info['code'])
             if x == ord('1'):
                return self.build_login()
             else:
-                return -1
+                return Ui.LOGIN_CANCELLED
         else:
-            return [login_info, account]
+            return login_info
 
-    def build_login_error(self):
+    def build_login_error(self, code):
         self.screen.move(4,1)
         self.screen.clrtobot()
-        self.screen.addstr(8, 19, '艾玛，登录信息好像不对呢 (O_O)#', curses.color_pair(1))
+        self.screen.addstr(8, 19, '艾玛，登录信息好像不对呢 (O_O)# %s' % code, curses.color_pair(1))
         self.screen.addstr(10,19, '[1] 再试一次')
         self.screen.addstr(11,19, '[2] 稍后再试')
         self.screen.addstr(14,19, '请键入对应数字:', curses.color_pair(2))

@@ -6,22 +6,12 @@
 '''
 
 import curses
-import locale
 import sys
 import os
-import json
 import time
 import webbrowser
 from api import NetEase
-from player import Player
 from ui import Ui
-
-home = os.path.expanduser("~") + '/.musicbox'
-if os.path.isdir(home) is False:
-    os.mkdir(home)
-
-locale.setlocale(locale.LC_ALL, "")
-code = locale.getpreferredencoding()
 
 # carousel x in [left, right]
 carousel = lambda left, right, x: left if (x>right) else (right if x<left else x)
@@ -50,38 +40,31 @@ shortcut = [
     ['q', 'Quit       ', '退出']
 ]
 
-
 class Menu:
-    def __init__(self):
+    def __init__(self, netease_instance, ui_instance, player_instance, profile):
         reload(sys)
         sys.setdefaultencoding('UTF-8')
         self.datatype = 'main'
         self.title = '网易云音乐'
-        self.datalist = ['排行榜', '艺术家', '新碟上架', '精选歌单', '我的歌单', 'DJ节目', '打碟', '收藏', '搜索', '帮助']
+        self.datalist = ['私人FM', '我的歌单', '每日推荐', '排行榜', '艺术家', '新碟上架', '精选歌单', '主播电台', '打碟', '收藏', '搜索', '帮助']
         self.offset = 0
         self.index = 0
         self.presentsongs = []
-        self.player = Player()
-        self.ui = Ui()
-        self.netease = NetEase()
-        self.screen = curses.initscr()
-        self.screen.keypad(1)
+
+        self.player = player_instance
+        self.ui = ui_instance
+        self.netease = netease_instance
+        self.userid, self.username, self.profile_update_callback = profile
+
         self.step = 10
         self.stack = []
         self.djstack = []
-        self.userid = None
-        self.username = None
-        try:
-            sfile = file(home + "/config.json",'r')
-            data = json.loads(sfile.read())
-            self.collection = data['collection']
-            self.account = data['account']
-            sfile.close()
-        except:
-            self.collection = []
-            self.account = {}
+
 
     def start(self):
+        self.screen = curses.initscr()
+        self.screen.keypad(1)
+
         self.ui.build_menu(self.datatype, self.title, self.datalist, self.offset, self.index, self.step)
         self.stack.append([self.datatype, self.title, self.datalist, self.offset, self.index])
         while True:
@@ -127,7 +110,7 @@ class Menu:
                 self.index = (index+step)//step*step
 
             # 前进
-            elif key == ord('l') or key == 10:
+            elif key == ord('l') or key == ord('\n'):# or key == 10:
                 if self.datatype == 'songs' or self.datatype == 'djchannels' or self.datatype == 'help':
                     continue
                 self.ui.build_loading()
@@ -248,16 +231,9 @@ class Menu:
 
             self.ui.build_menu(self.datatype, self.title, self.datalist, self.offset, self.index, self.step)
 
-
-        self.player.stop()
-        sfile = file(home + "/config.json", 'w')
-        data = {
-            'account': self.account,
-            'collection': self.collection
-        }
-        sfile.write(json.dumps(data))
-        sfile.close()
         curses.endwin()
+        self.player.stop()
+        sys.exit(0)
 
     def dispatch_enter(self, idx):
         # The end of stack
@@ -296,85 +272,95 @@ class Menu:
             self.datalist = netease.dig_info(songs, 'songs')
             self.title += ' > ' + datalist[idx]['playlists_name']
 
+
+
     def choice_channel(self, idx):
-        # 排行榜
+        def check_login():
+            # 未登录
+            data = netease.check_login(login_func = self.ui.build_login)
+            # 取消登录
+            if data == Ui.LOGIN_CANCELLED:
+                return False
+            elif data != NetEase.NO_ERROR:
+                self.username = data['profile']['nickname']
+                self.userid = data['account']['id']
+                self.profile_update_callback(self.userid, self.username)
+            return True
         netease = self.netease
+        # ['私人FM', '我的歌单', '每日推荐', '排行榜', '艺术家', '新碟上架', '精选歌单', '主播电台', '打碟', '收藏', '搜索', '帮助']
+        # 排行榜
+        # 我的歌单
         if idx == 0:
+            if not check_login():
+                return
+        elif idx == 1:
+            if not check_login():
+                return
+            # 读取登录之后的用户歌单
+            myplaylist = netease.user_playlist( self.userid )
+            self.datalist = netease.dig_info(myplaylist, 'playlists')
+            self.datatype = 'playlists'
+            self.title += ' > ' + self.username + ' 的歌单'
+        # 每日推荐
+        elif idx == 2:
+            if not check_login():
+                return
+            songs = netease.daily_recommend()
+            self.datalist = netease.dig_info(songs, 'songs')
+            self.title += ' > 每日歌曲推荐'
+            self.datatype = 'songs'
+        # 排行榜
+        elif idx == 3:
             songs = netease.top_songlist()
             self.datalist = netease.dig_info(songs, 'songs')
             self.title += ' > 排行榜'
             self.datatype = 'songs'
 
         # 艺术家
-        elif idx == 1:
+        elif idx == 4:
             artists = netease.top_artists()
             self.datalist = netease.dig_info(artists, 'artists')
             self.title += ' > 艺术家'
             self.datatype = 'artists'
 
         # 新碟上架
-        elif idx == 2:
+        elif idx == 5:
             albums = netease.new_albums()
             self.datalist = netease.dig_info(albums, 'albums')
             self.title += ' > 新碟上架'
             self.datatype = 'albums'
 
         # 精选歌单
-        elif idx == 3:
+        elif idx == 6:
             playlists = netease.top_playlists()
             self.datalist = netease.dig_info(playlists, 'playlists')
             self.title += ' > 精选歌单'
             self.datatype = 'playlists'
 
-        # 我的歌单
-        elif idx == 4:
-            # 未登录
-            if self.userid is None:
-                # 使用本地存储了账户登录
-                if self.account:
-                    user_info = netease.login(self.account[0], self.account[1])
-
-                # 本地没有存储账户，或本地账户失效，则引导录入
-                if self.account == {} or user_info['code'] != 200:
-                    data = self.ui.build_login()
-                    # 取消登录
-                    if data == -1:
-                        return
-                    user_info = data[0]
-                    self.account = data[1]
-
-                self.username = user_info['profile']['nickname']
-                self.userid = user_info['account']['id']
-            # 读取登录之后的用户歌单
-            myplaylist = netease.user_playlist( self.userid )
-            self.datalist = netease.dig_info(myplaylist, 'playlists')
-            self.datatype = 'playlists'
-            self.title += ' > ' + self.username + ' 的歌单'
-
         # DJ节目
-        elif idx == 5:
+        elif idx == 7:
             self.datatype = 'djchannels'
-            self.title += ' > DJ节目'
+            self.title += ' > 主播电台'
             self.datalist = netease.djchannels()
 
         # 打碟
-        elif idx == 6:
+        elif idx == 8:
             self.datatype = 'songs'
             self.title += ' > 打碟'
             self.datalist = self.djstack
 
         # 收藏
-        elif idx == 7:
+        elif idx == 8:
             self.datatype = 'songs'
             self.title += ' > 收藏'
             self.datalist = self.collection
 
         # 搜索
-        elif idx == 8:
+        elif idx == 10:
             self.search()
 
         # 帮助
-        elif idx == 9:
+        elif idx == 11:
             self.datatype = 'help'
             self.title += ' > 帮助'
             self.datalist = shortcut

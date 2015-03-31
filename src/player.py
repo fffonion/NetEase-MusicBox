@@ -21,8 +21,8 @@ carousel = lambda left, right, x: left if (x>right) else (right if x<left else x
 
 class Player:
 
-    def __init__(self):
-        self.ui = Ui()
+    def __init__(self, ui_instance):
+        self.ui = ui_instance
         self.datatype = 'songs'
         self.popen_handler = None
         # flag stop, prevent thread start
